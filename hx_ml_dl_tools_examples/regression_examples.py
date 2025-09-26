@@ -1,5 +1,5 @@
-from hx_machine_learning_tools import HxLightGbmRegressor, HxXtremeGradientBoostingRegressor, HxCatBoostRegressor
-from hx_deep_learning_tools import HxDenseNeuralNetworkRegressor
+from hx_ml_dl_tools import HxLightGbmRegressor, HxXtremeGradientBoostingRegressor, HxCatBoostRegressor
+from hx_ml_dl_tools import HxDenseNeuralNetworkRegressor
 from sklearn.datasets import load_diabetes, fetch_california_housing
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler

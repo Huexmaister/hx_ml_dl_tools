@@ -1,5 +1,5 @@
-from hx_machine_learning_tools import HxLightGbmBinaryClassifier, HxXtremeGradientBoostingBinaryClassifier, HxCatBoostBinaryClassifier
-from hx_deep_learning_tools import HxDenseNeuralNetworkBinaryClassifier
+from hx_ml_dl_tools import HxLightGbmBinaryClassifier, HxXtremeGradientBoostingBinaryClassifier, HxCatBoostBinaryClassifier
+from hx_ml_dl_tools import HxDenseNeuralNetworkBinaryClassifier
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.datasets import load_breast_cancer, fetch_openml
 from sklearn.model_selection import train_test_split
