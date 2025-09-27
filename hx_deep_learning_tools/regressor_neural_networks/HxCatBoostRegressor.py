@@ -1,7 +1,7 @@
 from _hx_model_evaluation_tools.hx_model_evaluation_and_metrics.regressors import EvaluateRegressor, RegressorMetricsCalculations
 from hx_deep_learning_tools.dl_base_model import HxDeepLearningBaseModel
 from catboost import CatBoostRegressor
-from _hx_model_evaluation_tools.hx_shap_tools import MlShapTools
+from _hx_model_evaluation_tools.hx_shap_tools import MlShapBinaryAndRegressorTools
 from typing import Dict, Literal, List, Any, Tuple
 from joblib import dump
 import pandas as pd
@@ -243,7 +243,7 @@ class HxCatBoostRegressor(HxDeepLearningBaseModel):
         probs_result_df: pd.DataFrame = pd.DataFrame(probs_result_dict)
 
         # --------------------------------------------------------------------------------------------
-        # -- 5: Instancio ClassifierMetricsCalculations para obtener toda la info del resultado y rellenar el self.master_dict
+        # -- 5: Instancio BinaryClassifierMetricsCalculations para obtener toda la info del resultado y rellenar el self.master_dict
         # --------------------------------------------------------------------------------------------
 
         # ---- 5.1: Obtengo el diccionario de metricas que proporciona RegressorMetricsCalculations.run
@@ -299,7 +299,7 @@ class HxCatBoostRegressor(HxDeepLearningBaseModel):
         :return:
         """
 
-        return MlShapTools(self.x_test_df, self.model_name, self.model_save_path, self.model).run()
+        return MlShapBinaryAndRegressorTools(self.x_test_df, self.model_name, self.model_save_path, self.model).run()
 
     # </editor-fold>
 

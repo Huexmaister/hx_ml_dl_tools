@@ -1,4 +1,4 @@
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, Dict
 import os
 import warnings
 
@@ -14,10 +14,10 @@ from info_tools import InfoTools
 warnings.filterwarnings("ignore")
 
 
-class DlShapTools:
+class DlShapToolsBinaryRegressor:
     """
     Clase para generar visualizaciones SHAP para modelos Keras / TensorFlow (TF 2.20).
-    Diseñada para comportarse similar a tu MlShapTools pero adaptada a modelos deep learning.
+    Diseñada para comportarse similar a tu MlShapBinaryAndRegressorTools pero adaptada a modelos deep learning.
     """
 
     # --------------------------------------------------------------------------------------------
@@ -543,5 +543,583 @@ class DlShapTools:
         summary_filename = os.path.join(self.save_path, f"{self.model_name}_shap_feature_importance_summary.csv")
         summary_df.to_csv(summary_filename, index=False)
         self.IT.info_print(f"Dataframe con las importancias relativas guardado: {summary_filename}")
+
+        return summary_df
+
+
+class DlShapToolsMulticlass:
+    """
+    Clase para generar visualizaciones SHAP para modelos Keras / TensorFlow para problemas multiclase.
+    Adaptada específicamente para manejar múltiples clases.
+    """
+
+    # --------------------------------------------------------------------------------------------
+    # -- 0: Constructor
+    # --------------------------------------------------------------------------------------------
+    def __init__(self,
+                 x_test: pd.DataFrame,
+                 model_name: str,
+                 save_path: str,
+                 model_object: Union[tf.keras.Model, Any],
+                 sample: bool = True,
+                 num_features_to_show: int = 100,
+                 num_sample: int = 200,
+                 background_sample: int = 100,
+                 n_classes: int = 3):
+        """
+        :param x_test: pd.DataFrame - Datos de prueba (features) para explicar (sin target).
+        :param model_name: str - Nombre del modelo.
+        :param save_path: str - Ruta base donde se guardarán los gráficos (se creará subcarpeta SHAP).
+        :param model_object: tf.keras.Model (modelo ya cargado/entrenado).
+        :param sample: bool - Si se usa muestreo para x_test (reduce coste computacional).
+        :param num_features_to_show: int - Top N features a mostrar en gráficas.
+        :param num_sample: int - Número máximo de filas a conservar en x_test si sample=True.
+        :param background_sample: int - Número de instancias para background (explicador deep/grad).
+        :param n_classes: int - Número de clases en el problema multiclase.
+        """
+        # ---- 0.1: Herramientas de utilidad
+        self.IT: InfoTools = InfoTools()
+
+        # ---- 0.2: Guardado de parámetros y tipado
+        self.x_test: pd.DataFrame = x_test.copy()
+        self.model_name: str = model_name
+        self.save_path: str = os.path.join(save_path, "SHAP")
+        self.sample: bool = sample
+        self.num_features_to_show: int = min(num_features_to_show, len(self.x_test.columns))
+        self.num_sample: int = num_sample
+        self.background_sample: int = background_sample
+        self.model: Union[tf.keras.Model, Any] = model_object
+        self.n_classes: int = n_classes
+
+        # ---- 0.3: Crear directorio
+        os.makedirs(self.save_path, exist_ok=True)
+
+        # ---- 0.4: Mensaje inicial
+        self.IT.sub_intro_print(f"Realizando análisis SHAP (DL Multiclass) para {self.model_name} con {n_classes} clases...")
+
+        # ---- 0.5: Muestreo si procede
+        if self.sample and len(self.x_test) > self.num_sample:
+            try:
+                self.x_test = self.x_test.sample(n=self.num_sample, random_state=42)
+            except Exception as e:
+                print(f"Error en el muestreo de x_test: {e}")
+
+        # --------------------------------------------------------------------------------------------
+        # -- 1: Preparar datos de background
+        # --------------------------------------------------------------------------------------------
+        if len(self.x_test) > 0:
+            self._background: pd.DataFrame = self.x_test.sample(n=min(self.background_sample, len(self.x_test)), random_state=42)
+        else:
+            raise ValueError("x_test no puede estar vacío para generar explicaciones SHAP.")
+
+        # ---- 1.1: Establecer tipo de problema como multiclase
+        self.problem_type: str = "multiclass"
+
+        # ---- 1.2: Preparar interfaz de predicción
+        self._prepare_model_prediction_interface()
+
+        # --------------------------------------------------------------------------------------------
+        # -- 2: Inicializar SHAP Explainer y calcular valores SHAP
+        # --------------------------------------------------------------------------------------------
+        self.explainer: Optional[Any] = None
+        self.shap_values_raw: Optional[Any] = None
+        self.shap_values: Optional[np.ndarray] = None  # Forma corregida: (n_samples, n_features, n_classes)
+        self.expected_value: Optional[Union[float, np.ndarray]] = None
+        self.shap_dfs: Optional[Dict[int, pd.DataFrame]] = {}  # DataFrames por clase
+        self.shap_sums: Optional[Dict[int, pd.Series]] = {}  # Sumas por clase
+
+        self._initialize_shap_explainer()
+
+    # --------------------------------------------------------------------------------------------
+    # -- 1.1: Preparar función de predicción para multiclase
+    # --------------------------------------------------------------------------------------------
+    def _prepare_model_prediction_interface(self) -> None:
+        """
+        Prepara la interfaz de predicción para modelos multiclase.
+        """
+
+        def model_predict_numpy(x: Union[np.ndarray, pd.DataFrame]) -> np.ndarray:
+            if isinstance(x, pd.DataFrame):
+                arr = x.values
+            else:
+                arr = np.asarray(x)
+
+            preds = self.model.predict(arr, verbose=0)
+            return np.asarray(preds)
+
+        self._model_predict = model_predict_numpy
+
+        # Verificar que el modelo produce salidas multiclase
+        try:
+            sample_pred = self._model_predict(self._background.iloc[:min(5, len(self._background))])
+            if sample_pred.ndim != 2 or sample_pred.shape[1] != self.n_classes:
+                self.IT.info_print(f"Advertencia: Forma de salida del modelo {sample_pred.shape} no coincide con n_classes={self.n_classes}")
+        except Exception as e:
+            raise RuntimeError(f"Error ejecutando model.predict sobre background: {e}")
+
+    # --------------------------------------------------------------------------------------------
+    # -- 2: Inicializar SHAP Explainer para multiclase
+    # --------------------------------------------------------------------------------------------
+    def _initialize_shap_explainer(self) -> None:
+        """
+        Inicializa el explainer de SHAP para modelos multiclase.
+        """
+        try:
+            # ---- 2.1: Función de predicción
+            def f_model(x_array: np.ndarray) -> np.ndarray:
+                preds = self._model_predict(x_array)
+                return preds
+
+            # ---- 2.2: Intentar crear Explainer
+            try:
+                masker = shap.maskers.Independent(self._background.values)
+                self.explainer = shap.Explainer(f_model, masker, output_names=[f"Class_{i}" for i in range(self.n_classes)])
+            except Exception:
+                # Fallback: DeepExplainer
+                try:
+                    self.IT.info_print("hx_shap_tools.Explainer falló, intentando DeepExplainer...")
+                    self.explainer = shap.DeepExplainer(self.model, self._background.values)
+                except Exception as e_deep:
+                    raise RuntimeError(f"No se pudo inicializar explainer: {e_deep}")
+
+            # ---- 2.3: Calcular valores SHAP
+            self.IT.info_print("Calculando valores SHAP para multiclase...")
+            shap_result = self.explainer(self.x_test.values)
+
+            # ---- 2.4: Procesar resultados
+            self.shap_values_raw = shap_result
+
+            # Obtener expected_value
+            try:
+                if hasattr(shap_result, "base_values"):
+                    self.expected_value = shap_result.base_values
+                elif hasattr(self.explainer, "expected_value"):
+                    self.expected_value = self.explainer.expected_value
+                else:
+                    self.expected_value = None
+            except Exception:
+                self.expected_value = None
+
+            # ---- 2.5: Procesar valores SHAP para multiclase
+            self._process_shap_values_multiclass()
+
+            # ---- 2.6: Crear DataFrames por clase
+            self._create_shap_dataframes()
+
+            self.IT.info_print("Explainer multiclase inicializado correctamente.")
+
+        except Exception as e:
+            print(f"Error inicializando SHAP explainer multiclase: {e}")
+            raise
+
+    # --------------------------------------------------------------------------------------------
+    # -- 2.1: Procesar valores SHAP para multiclase (CORREGIDO)
+    # --------------------------------------------------------------------------------------------
+    def _process_shap_values_multiclass(self) -> None:
+        """
+        Procesa los valores SHAP para problemas multiclase.
+        Forma esperada final: (n_samples, n_features, n_classes)
+        """
+        raw = self.shap_values_raw
+
+        if hasattr(raw, "values"):
+            vals = raw.values
+        else:
+            vals = raw
+
+        vals = np.asarray(vals)
+
+        self.IT.info_print(f"Forma inicial de SHAP values: {vals.shape}")
+
+        # Detectar y corregir la forma de los valores SHAP
+        if vals.ndim == 3:
+            n_samples, dim2, dim3 = vals.shape
+
+            # Verificar qué dimensión corresponde a features y clases
+            n_features = len(self.x_test.columns)
+
+            # Caso 1: (samples, features, classes) - forma correcta
+            if dim2 == n_features and dim3 == self.n_classes:
+                self.shap_values = vals
+                self.IT.info_print("Forma detectada: (samples, features, classes) - correcto")
+
+            # Caso 2: (samples, classes, features) - necesita transponer
+            elif dim2 == self.n_classes and dim3 == n_features:
+                self.shap_values = np.transpose(vals, (0, 2, 1))  # (samples, classes, features) -> (samples, features, classes)
+                self.IT.info_print("Forma detectada: (samples, classes, features) - transponiendo a (samples, features, classes)")
+
+            else:
+                self.IT.info_print(f"Advertencia: Forma no reconocida. dim2={dim2}, dim3={dim3}, n_features={n_features}, n_classes={self.n_classes}")
+                # Usar como está y ajustar después
+                self.shap_values = vals
+
+        elif vals.ndim == 2:
+            # Si es 2D, asumir (samples, features) para clase única
+            self.shap_values = vals.reshape(vals.shape[0], vals.shape[1], 1)
+
+        elif isinstance(vals, list) and len(vals) == self.n_classes:
+            # Lista de arrays por clase: [array_class_0, array_class_1, ...]
+            try:
+                # Apilar como (samples, features, classes)
+                stacked = np.stack(vals, axis=2)
+                self.shap_values = stacked
+                self.IT.info_print("Forma detectada: lista de arrays por clase - apilando")
+            except Exception as e:
+                self.IT.info_print(f"Error apilando lista de valores SHAP: {e}")
+                self.shap_values = np.asarray(vals[0]).reshape(vals[0].shape[0], vals[0].shape[1], 1)
+        else:
+            raise ValueError(f"Forma de SHAP values no reconocida: {vals.shape if hasattr(vals, 'shape') else type(vals)}")
+
+        # VERIFICAR consistencia final
+        final_shape = self.shap_values.shape
+        expected_samples = len(self.x_test)
+        expected_features = len(self.x_test.columns)
+
+        self.IT.info_print(f"Forma final de SHAP values: {final_shape}")
+        self.IT.info_print(f"Esperado: ({expected_samples}, {expected_features}, {self.n_classes})")
+
+    # --------------------------------------------------------------------------------------------
+    # -- 2.2: Crear DataFrames de SHAP por clase (CORREGIDO)
+    # --------------------------------------------------------------------------------------------
+    def _create_shap_dataframes(self) -> None:
+        """
+        Crea DataFrames separados para cada clase.
+        Asume forma: (n_samples, n_features, n_classes)
+        """
+        n_samples, n_features, n_classes_actual = self.shap_values.shape
+        n_features_expected = len(self.x_test.columns)
+
+        # Ajustar número de features si hay discrepancia
+        features_to_use = min(n_features, n_features_expected)
+
+        for class_idx in range(min(self.n_classes, n_classes_actual)):
+            # Extraer valores SHAP para esta clase: (samples, features)
+            class_shap_values = self.shap_values[:, :features_to_use, class_idx]
+
+            # Usar las primeras 'features_to_use' columnas
+            columns_to_use = self.x_test.columns[:features_to_use]
+
+            # Ajustar número de muestras si es necesario
+            samples_to_use = min(n_samples, len(self.x_test))
+
+            # Crear DataFrame
+            shap_df = pd.DataFrame(
+                data=class_shap_values[:samples_to_use],
+                columns=columns_to_use,
+                index=self.x_test.index[:samples_to_use]
+            )
+
+            # Calcular importancia (mean |SHAP|)
+            shap_sum = np.abs(shap_df).mean().sort_values(ascending=False)
+            shap_sum = shap_sum[:self.num_features_to_show]
+
+            self.shap_dfs[class_idx] = shap_df
+            self.shap_sums[class_idx] = shap_sum
+
+            self.IT.info_print(f"Clase {class_idx}: DataFrame creado con forma {shap_df.shape}")
+
+    # --------------------------------------------------------------------------------------------
+    # -- plot_summary_multiclass (CORREGIDO)
+    # --------------------------------------------------------------------------------------------
+    def plot_summary_multiclass(self, plot_type: str = "violin") -> None:
+        """
+        Genera gráficos summary para cada clase.
+        """
+        for class_idx in range(self.n_classes):
+            if class_idx not in self.shap_dfs:
+                continue
+
+            try:
+                shap_df = self.shap_dfs[class_idx]
+
+                # Extraer valores SHAP para esta clase
+                class_shap_values = self.shap_values[:len(shap_df), :len(shap_df.columns), class_idx]
+
+                # Crear x_test compatible
+                x_test_compatible = self.x_test.iloc[:len(shap_df), :len(shap_df.columns)]
+
+                plt.figure(figsize=(10, 8))
+                shap.summary_plot(
+                    class_shap_values,
+                    x_test_compatible,
+                    show=False,
+                    plot_type=plot_type,
+                    max_display=self.num_features_to_show,
+                    title=f"SHAP Summary - {self.model_name} - Class {class_idx}"
+                )
+                plt.tight_layout()
+                filename = os.path.join(self.save_path, f"{self.model_name}_shap_summary_class_{class_idx}_{plot_type}.png")
+                plt.savefig(filename, dpi=300, bbox_inches="tight")
+                plt.close()
+                self.IT.info_print(f"Summary plot para clase {class_idx} guardado: {filename}")
+
+            except Exception as e:
+                self.IT.info_print(f"Error generando summary plot para clase {class_idx}: {e}")
+
+    # --------------------------------------------------------------------------------------------
+    # -- save_waterfall_plot_multiclass (CORREGIDO)
+    # --------------------------------------------------------------------------------------------
+    def save_waterfall_plot_multiclass(self, instance_idx: int = 0) -> None:
+        """
+        Genera waterfall plots para una instancia en todas las clases.
+        """
+        if instance_idx >= len(self.x_test):
+            self.IT.info_print(f"Instance {instance_idx} fuera de rango")
+            return
+
+        for class_idx in range(self.n_classes):
+            if class_idx not in self.shap_dfs:
+                continue
+
+            try:
+                shap_df = self.shap_dfs[class_idx]
+
+                # Verificar que la instancia existe en este DataFrame
+                if instance_idx >= len(shap_df):
+                    continue
+
+                # Extraer valores SHAP para esta instancia y clase
+                vals_inst = self.shap_values[instance_idx, :len(shap_df.columns), class_idx]
+
+                # Manejar expected_value
+                base_val = 0.0  # Valor por defecto
+                if self.expected_value is not None:
+                    if isinstance(self.expected_value, (list, np.ndarray)):
+                        if len(self.expected_value) > class_idx:
+                            base_val = float(self.expected_value[class_idx])
+                        elif len(self.expected_value) == 1:
+                            base_val = float(self.expected_value[0])
+                    else:
+                        base_val = float(self.expected_value)
+
+                # Crear explicación SHAP
+                expl = shap.Explanation(
+                    values=vals_inst,
+                    base_values=base_val,
+                    data=self.x_test.iloc[instance_idx, :len(shap_df.columns)].values,
+                    feature_names=list(shap_df.columns)
+                )
+
+                plt.figure(figsize=(10, 8))
+                shap.waterfall_plot(expl, show=False)
+                plt.title(f"Waterfall Plot - Class {class_idx} - Instance {instance_idx}")
+                filename = os.path.join(self.save_path, f"{self.model_name}_shap_waterfall_class_{class_idx}_instance_{instance_idx}.png")
+                plt.savefig(filename, dpi=300, bbox_inches="tight")
+                plt.close()
+                self.IT.info_print(f"Waterfall plot para clase {class_idx} guardado: {filename}")
+
+            except Exception as e:
+                self.IT.info_print(f"Error generando waterfall plot para clase {class_idx}: {e}")
+
+    # --------------------------------------------------------------------------------------------
+    # -- Métodos existentes (sin cambios necesarios)
+    # --------------------------------------------------------------------------------------------
+    def get_feature_importance_summary(self) -> pd.DataFrame:
+        """
+        Retorna un DataFrame con resumen de importancia para todas las clases.
+        """
+        summary_data = []
+
+        for class_idx in range(self.n_classes):
+            if class_idx not in self.shap_sums:
+                continue
+
+            shap_sum = self.shap_sums[class_idx]
+            shap_df = self.shap_dfs[class_idx]
+
+            for feature in shap_sum.index:
+                summary_data.append({
+                    "class": f"Class_{class_idx}",
+                    "feature": feature,
+                    "mean_abs_shap": shap_sum[feature],
+                    "mean_shap": shap_df[feature].mean(),
+                    "std_shap": shap_df[feature].std(),
+                    "rank": len(summary_data) + 1
+                })
+
+        return pd.DataFrame(summary_data)
+
+    def save_barplot_multiclass(self, show_figure: bool = False) -> None:
+        """
+        Genera barplots interactivos para todas las clases.
+        """
+        try:
+            # Crear figura con subplots
+            fig = go.Figure()
+
+            # Colores para cada clase
+            colors = plt.cm.Set3(np.linspace(0, 1, self.n_classes))
+
+            for class_idx in range(self.n_classes):
+                if class_idx not in self.shap_sums:
+                    continue
+
+                shap_sum = self.shap_sums[class_idx]
+                color_rgb = (int(colors[class_idx][0] * 255),
+                             int(colors[class_idx][1] * 255),
+                             int(colors[class_idx][2] * 255))
+
+                fig.add_trace(go.Bar(
+                    x=shap_sum.values,
+                    y=[f"{feature} (Class {class_idx})" for feature in shap_sum.index],
+                    orientation="h",
+                    marker_color=f"rgba({color_rgb[0]}, {color_rgb[1]}, {color_rgb[2]}, 0.7)",
+                    name=f"Class {class_idx}"
+                ))
+
+            fig.update_layout(
+                title=f"Feature Importance Multiclass - {self.model_name}",
+                xaxis_title="Mean |SHAP value|",
+                yaxis_title="Features",
+                height=max(600, len(list(self.shap_sums.values())[0]) * self.n_classes * 10),
+                margin=dict(l=200, r=50, t=80, b=50),
+                barmode="group"
+            )
+
+            filename = os.path.join(self.save_path, f"{self.model_name}_shap_barplot_multiclass.html")
+            fig.write_html(filename)
+
+            if show_figure:
+                fig.show()
+
+            self.IT.info_print(f"Barplot multiclase guardado: {filename}")
+
+        except Exception as e:
+            print(f"Error generando barplot multiclase: {e}")
+
+    def save_heatmap_multiclass(self, show_figure: bool = False) -> None:
+        """
+        Genera heatmap de importancias por clase y feature.
+        """
+        try:
+            # Preparar datos para heatmap
+            if not self.shap_sums:
+                return
+
+            features = list(list(self.shap_sums.values())[0].index)
+            importance_matrix = np.zeros((len(features), self.n_classes))
+
+            for class_idx in range(self.n_classes):
+                if class_idx not in self.shap_sums:
+                    continue
+
+                shap_sum = self.shap_sums[class_idx]
+                for i, feature in enumerate(features):
+                    if feature in shap_sum.index:
+                        importance_matrix[i, class_idx] = shap_sum[feature]
+
+            # Crear heatmap
+            fig = go.Figure(data=go.Heatmap(
+                z=importance_matrix,
+                x=[f"Class {i}" for i in range(self.n_classes)],
+                y=features,
+                colorscale="Viridis",
+                showscale=True
+            ))
+
+            fig.update_layout(
+                title=f"SHAP Importance Heatmap - {self.model_name}",
+                xaxis_title="Classes",
+                yaxis_title="Features",
+                height=max(600, len(features) * 20)
+            )
+
+            filename = os.path.join(self.save_path, f"{self.model_name}_shap_heatmap_multiclass.html")
+            fig.write_html(filename)
+
+            if show_figure:
+                fig.show()
+
+            self.IT.info_print(f"Heatmap multiclase guardado: {filename}")
+
+        except Exception as e:
+            print(f"Error generando heatmap multiclase: {e}")
+
+    def save_class_comparison_plot(self, show_figure: bool = False) -> None:
+        """
+        Genera gráfico de comparación de importancias entre clases para cada feature.
+        """
+        try:
+            if not self.shap_sums:
+                return
+
+            features = list(list(self.shap_sums.values())[0].index)
+            fig = go.Figure()
+
+            for i, feature in enumerate(features):
+                importances = []
+                for class_idx in range(self.n_classes):
+                    if class_idx in self.shap_sums:
+                        shap_sum = self.shap_sums[class_idx]
+                        if feature in shap_sum.index:
+                            importances.append(shap_sum[feature])
+                        else:
+                            importances.append(0)
+                    else:
+                        importances.append(0)
+
+                fig.add_trace(go.Scatter(
+                    x=list(range(self.n_classes)),
+                    y=importances,
+                    mode="lines+markers",
+                    name=feature,
+                    hovertemplate=f"Feature: {feature}<br>Class: %{{x}}<br>Importance: %{{y}}<extra></extra>"
+                ))
+
+            fig.update_layout(
+                title=f"Feature Importance Comparison Across Classes - {self.model_name}",
+                xaxis_title="Class",
+                yaxis_title="Mean |SHAP value|",
+                xaxis=dict(tickvals=list(range(self.n_classes)),
+                           ticktext=[f"Class {i}" for i in range(self.n_classes)]),
+                height=600
+            )
+
+            filename = os.path.join(self.save_path, f"{self.model_name}_shap_class_comparison.html")
+            fig.write_html(filename)
+
+            if show_figure:
+                fig.show()
+
+            self.IT.info_print(f"Gráfico de comparación entre clases guardado: {filename}")
+
+        except Exception as e:
+            print(f"Error generando gráfico de comparación: {e}")
+
+    # --------------------------------------------------------------------------------------------
+    # -- run (ejecuta pipeline completo para multiclase)
+    # --------------------------------------------------------------------------------------------
+    def run(self, include_waterfall: bool = True, include_force: bool = False) -> pd.DataFrame:
+        """
+        Ejecuta todos los métodos de visualización para multiclase.
+        Retorna summary_df con importancias de todas las clases.
+        """
+        # ---- 1: Gráficos principales
+        self.plot_summary_multiclass("violin")
+        self.plot_summary_multiclass("dot")
+        self.save_barplot_multiclass()
+        self.save_heatmap_multiclass()
+        self.save_class_comparison_plot()
+
+        # ---- 2: Gráficos por instancia
+        if include_waterfall and len(self.x_test) > 0:
+            self.save_waterfall_plot_multiclass(0)
+
+        # ---- 3: Guardar resumen completo
+        summary_df = self.get_feature_importance_summary()
+        if not summary_df.empty:
+            summary_filename = os.path.join(self.save_path, f"{self.model_name}_shap_feature_importance_multiclass_summary.csv")
+            summary_df.to_csv(summary_filename, index=False)
+
+            # ---- 4: Guardar resumen por clase
+            for class_idx in range(self.n_classes):
+                class_summary = summary_df[summary_df["class"] == f"Class_{class_idx}"]
+                if not class_summary.empty:
+                    class_filename = os.path.join(self.save_path, f"{self.model_name}_shap_class_{class_idx}_summary.csv")
+                    class_summary.to_csv(class_filename, index=False)
+
+            self.IT.info_print(f"Análisis SHAP multiclase completado. Resumen guardado: {summary_filename}")
+        else:
+            self.IT.info_print("No se pudieron generar resúmenes SHAP debido a errores en el procesamiento")
 
         return summary_df

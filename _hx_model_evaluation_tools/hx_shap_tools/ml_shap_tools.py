@@ -10,7 +10,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
-class MlShapTools:
+class MlShapBinaryAndRegressorTools:
     def __init__(self,
                  x_test: pd.DataFrame,
                  model_name: str,
@@ -30,9 +30,15 @@ class MlShapTools:
         :param num_sample: Número de muestras a usar si sample=True
         """
 
-        self.IT: InfoTools = InfoTools()
+        # ---------------------------------------------------------------------------------------------------------
+        # -- 1: Instancio info tools y almaceno propiedades
+        # ---------------------------------------------------------------------------------------------------------
 
-        # Almaceno parámetros en propiedades
+        # ---- 1.1: Instancio Infotools y pinto la entrada
+        self.IT: InfoTools = InfoTools()
+        self.IT.sub_intro_print(f"Realizando análisis SHAP y generando gráficos....")
+
+        # ---- 1.2: Almaceno parámetros en propiedades
         self.x_test: pd.DataFrame = x_test.copy()
         self.model_name: str = self._normalize_model_name(model_name)
         self.save_path: str = f"{save_path}/SHAP"
@@ -41,20 +47,21 @@ class MlShapTools:
         self.num_sample: int = num_sample
         self.model = model_object
 
-        # Crear directorio si no existe
+        # ---- 1.3: Crear directorio si no existe
         os.makedirs(self.save_path, exist_ok=True)
 
-        # - Pinto la entrada
-        self.IT.sub_intro_print(f"Realizando análisis SHAP y generando gráficos....")
+        # ---------------------------------------------------------------------------------------------------------
+        # -- 2: Ejecuto el sampleo si es necesario y llamo al shap
+        # ---------------------------------------------------------------------------------------------------------
 
-        # Sampleo si es necesario
+        # ---- 2.1: Sampleo si es necesario
         if sample and len(self.x_test) > num_sample:
             try:
                 self.x_test = self.x_test.sample(n=num_sample, random_state=42)
             except ValueError as e:
                 print(f"Error en el muestreo: {e}")
 
-        # Inicializar explainer y valores SHAP
+        # ---- 2.2: Inicializo explainer y valores SHAP
         self._initialize_shap_explainer()
 
     @staticmethod
@@ -75,6 +82,7 @@ class MlShapTools:
     def _initialize_shap_explainer(self):
         """Inicializa el explainer de SHAP y calcula los valores SHAP."""
         try:
+
             # Crear explainer
             self.explainer = shap.TreeExplainer(self.model)
 
@@ -321,5 +329,184 @@ class MlShapTools:
         summary_df.to_csv(summary_filename, index=False)
 
         self.IT.info_print(f"Dataframe con las importancias relativas {summary_filename} guardado OK")
+
+        return summary_df
+
+
+class MlShapToolsMulticlass:
+    def __init__(self,
+                 x_test: pd.DataFrame,
+                 model_name: str,
+                 save_path: str,
+                 model_object,
+                 n_classes: int = 2,
+                 sample: bool = True,
+                 num_features_to_show: int = 100,
+                 num_sample: int = 500):
+        """
+        Clase SHAP adaptada para multiclase - VERSIÓN CORREGIDA
+        """
+
+        self.IT: InfoTools = InfoTools()
+        self.x_test: pd.DataFrame = x_test.copy()
+        self.model_name: str = model_name
+        self.save_path: str = f"{save_path}/SHAP_MULTICLASS"
+        self.n_classes: int = n_classes
+        self.sample: bool = sample
+        self.num_features_to_show: int = min(num_features_to_show, len(x_test.columns))
+        self.num_sample: int = num_sample
+        self.model = model_object
+
+        # Crear directorio
+        os.makedirs(self.save_path, exist_ok=True)
+        self.IT.sub_intro_print(f"SHAP Multiclase para {n_classes} clases")
+
+        # Sampleo
+        if sample and len(self.x_test) > num_sample:
+            self.x_test = self.x_test.sample(n=num_sample, random_state=42)
+
+        # Inicialización CORREGIDA
+        self._initialize_shap_explainer()
+
+    def _initialize_shap_explainer(self):
+        """Inicialización CORREGIDA para multiclase"""
+        try:
+            # 1. Crear explainer
+            self.explainer = shap.TreeExplainer(self.model)
+
+            # 2. Calcular SHAP values - ESTA ES LA CLAVE
+            self.shap_values = self.explainer.shap_values(self.x_test)
+
+            # 3. DEBUG: Verificar la estructura
+            self.IT.info_print(f"Estructura SHAP: {type(self.shap_values)}")
+            if hasattr(self.shap_values, 'shape'):
+                self.IT.info_print(f"Shape SHAP: {self.shap_values.shape}")
+            elif isinstance(self.shap_values, list):
+                self.IT.info_print(f"Lista SHAP length: {len(self.shap_values)}")
+                for i, arr in enumerate(self.shap_values):
+                    if hasattr(arr, 'shape'):
+                        self.IT.info_print(f"  Clase {i} shape: {arr.shape}")
+
+            # 4. Procesar según la estructura real
+            self._process_shap_values_corrected()
+
+            self.IT.info_print("SHAP inicializado correctamente")
+
+        except Exception as e:
+            self.IT.info_print(f"Error en SHAP: {e}")
+            # Fallback: usar aproximación por clase
+            self._initialize_shap_fallback()
+
+    def _process_shap_values_corrected(self):
+        """Procesamiento CORREGIDO para diferentes estructuras de SHAP"""
+        # Caso 1: Lista de arrays [clase1, clase2, ...] (común en LightGBM multiclase)
+        if isinstance(self.shap_values, list) and len(self.shap_values) == self.n_classes:
+            self.IT.info_print("Estructura: Lista por clases")
+            self.shap_values_processed = self.shap_values
+
+        # Caso 2: Array 3D [muestras, features, clases] (shape=(30, 4, 3))
+        elif (hasattr(self.shap_values, 'shape') and
+              len(self.shap_values.shape) == 3 and
+              self.shap_values.shape[2] == self.n_classes):
+            self.IT.info_print("Estructura: Array 3D")
+            # Convertir a lista por clases
+            self.shap_values_processed = []
+            for class_idx in range(self.n_classes):
+                self.shap_values_processed.append(self.shap_values[:, :, class_idx])
+
+        # Caso 3: Array 2D (modelo binario o estructura diferente)
+        elif hasattr(self.shap_values, 'shape') and len(self.shap_values.shape) == 2:
+            self.IT.info_print("Estructura: Array 2D - replicando para multiclase")
+            self.shap_values_processed = [self.shap_values] * self.n_classes
+
+        else:
+            self.IT.warning_print("Estructura no reconocida, usando fallback")
+            self._initialize_shap_fallback()
+
+    def _initialize_shap_fallback(self):
+        """Fallback: calcular SHAP por clase individualmente"""
+        self.IT.info_print("Usando método fallback para SHAP")
+        self.shap_values_processed = []
+
+        # Predecir probabilidades para referencia
+        y_pred_proba = self.model.predict_proba(self.x_test)
+
+        for class_idx in range(self.n_classes):
+            try:
+                # Crear explainer específico para esta clase
+                explainer_class = shap.TreeExplainer(self.model)
+
+                # Calcular SHAP values para esta clase
+                shap_vals = explainer_class.shap_values(self.x_test)
+
+                # Procesar según la estructura
+                if isinstance(shap_vals, list) and len(shap_vals) > class_idx:
+                    self.shap_values_processed.append(shap_vals[class_idx])
+                else:
+                    self.shap_values_processed.append(shap_vals)
+
+            except Exception as e:
+                self.IT.warning_print(f"Error en clase {class_idx}: {e}")
+                # Crear array de ceros como fallback
+                self.shap_values_processed.append(
+                    np.zeros((len(self.x_test), len(self.x_test.columns)))
+                )
+
+    def plot_global_summary(self):
+        """Summary plot con promedio de todas las clases"""
+        try:
+            # Promedio de todas las clases
+            shap_avg = np.mean(self.shap_values_processed, axis=0)
+
+            plt.figure(figsize=(10, 8))
+            shap.summary_plot(shap_avg, self.x_test, show=False, max_display=self.num_features_to_show)
+            plt.title(f"SHAP Summary - {self.model_name} (Global)")
+            plt.tight_layout()
+            plt.savefig(f'{self.save_path}/global_summary.png', dpi=300, bbox_inches='tight')
+            plt.close()
+            self.IT.info_print("Summary global guardado")
+
+        except Exception as e:
+            self.IT.warning_print(f"Error en summary global: {e}")
+
+    def plot_class_summaries(self):
+        """Summary plot para cada clase individual"""
+        for class_idx in range(self.n_classes):
+            try:
+                plt.figure(figsize=(10, 8))
+                shap.summary_plot(self.shap_values_processed[class_idx], self.x_test,
+                                  show=False, max_display=self.num_features_to_show)
+                plt.title(f"SHAP Summary - {self.model_name} (Class {class_idx})")
+                plt.tight_layout()
+                plt.savefig(f'{self.save_path}/class_{class_idx}_summary.png', dpi=300, bbox_inches='tight')
+                plt.close()
+                self.IT.info_print(f"Summary clase {class_idx} guardado")
+
+            except Exception as e:
+                self.IT.warning_print(f"Error en clase {class_idx}: {e}")
+
+    def run(self):
+        """Ejecución principal"""
+        self.IT.sub_intro_print("Generando visualizaciones SHAP...")
+
+        # Gráficos principales
+        self.plot_global_summary()
+        self.plot_class_summaries()
+
+        # Resumen simple
+        summary_data = []
+        for class_idx in range(self.n_classes):
+            if hasattr(self.shap_values_processed[class_idx], 'shape'):
+                importance = np.abs(self.shap_values_processed[class_idx]).mean(axis=0)
+                for feat_idx, feat_name in enumerate(self.x_test.columns):
+                    summary_data.append({
+                        'feature': feat_name,
+                        'mean_abs_shap': importance[feat_idx],
+                        'class': f'class_{class_idx}'
+                    })
+
+        summary_df = pd.DataFrame(summary_data)
+        summary_df.to_csv(f'{self.save_path}/shap_summary.csv', index=False)
+        self.IT.info_print("Análisis SHAP completado")
 
         return summary_df

@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 
 
-class ClassifierMetricsCalculations:
+class BinaryClassifierMetricsCalculations:
     def __init__(self,
                  probs_result_df,
                  model_save_path: str,
@@ -298,7 +298,7 @@ class ClassifierMetricsCalculations:
     # </editor-fold>
 
 
-class EvaluateClassifier:
+class EvaluateBinaryClassifier:
     def __init__(self, data_dict: dict, model_name: str, selected_metric: str | None = None):
 
         # --------------------------------------------------------------------------------------------
@@ -337,7 +337,7 @@ class EvaluateClassifier:
         # --------------------------------------------------------------------------------------------
 
         # ---- 1.1: Pinto la entrada
-        self.CT.IT.sub_intro_print("EvaluateClassifier: Calculando metricas de entrenamiento...")
+        self.CT.IT.sub_intro_print("EvaluateBinaryClassifier: Calculando metricas de entrenamiento...")
 
         # ---- 1.2: Itero por las target_col, calculo metricas y agrego al df. (Actualmente solo hay una target)
 

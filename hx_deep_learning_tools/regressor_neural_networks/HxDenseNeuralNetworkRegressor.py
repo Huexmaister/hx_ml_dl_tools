@@ -1,7 +1,7 @@
 from hx_deep_learning_tools.dl_base_model import HxDeepLearningBaseModel
 from _hx_model_evaluation_tools import EvaluateRegressor, RegressorMetricsCalculations
 import tensorflow as tf
-from _hx_model_evaluation_tools import DlShapTools
+from _hx_model_evaluation_tools import DlShapToolsBinaryRegressor
 from typing import Dict, Literal, List, Any, Tuple
 import pandas as pd
 import numpy as np
@@ -526,7 +526,7 @@ class HxDenseNeuralNetworkRegressor(HxDeepLearningBaseModel):
         :param background_sample:
         :return:
         """
-        return DlShapTools(self.x_test_df, self.model_name, self.model_save_path, self.model, sample, num_features_to_show, num_sample, background_sample).run()
+        return DlShapToolsBinaryRegressor(self.x_test_df, self.model_name, self.model_save_path, self.model, sample, num_features_to_show, num_sample, background_sample).run()
 
     def get_loss_function(self) -> Literal['mse', 'mae', 'msle', 'mape', 'huber', 'log_cosh']:
         """

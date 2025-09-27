@@ -1,7 +1,7 @@
 from hx_deep_learning_tools.dl_base_model import HxDeepLearningBaseModel
-from _hx_model_evaluation_tools import EvaluateClassifier, ClassifierMetricsCalculations
+from _hx_model_evaluation_tools import EvaluateBinaryClassifier, BinaryClassifierMetricsCalculations
 import tensorflow as tf
-from _hx_model_evaluation_tools import DlShapTools
+from _hx_model_evaluation_tools import DlShapToolsBinaryRegressor
 from typing import Dict, Literal, List, Any, Tuple
 import pandas as pd
 import numpy as np
@@ -16,7 +16,7 @@ class HxDenseNeuralNetworkBinaryClassifier(HxDeepLearningBaseModel):
                  data_dict: Dict[str, pd.DataFrame],
                  hiperparams: dict,
                  metric: Literal['accuracy', 'precision', 'recall', 'f1', 'specificity', 'balanced_acc', 'roc_auc'],
-                 problem_type: Literal['binary', 'multiclass'],
+                 problem_type: Literal['binary'],
                  geometry: Literal[0, 1, 2, 3] = 1,
                  hidden_layers: int = 2,
                  activation: Literal['relu', 'tanh', 'sigmoid'] = 'relu',
@@ -38,7 +38,7 @@ class HxDenseNeuralNetworkBinaryClassifier(HxDeepLearningBaseModel):
         """
         super().__init__(data_dict,
                          hiperparams,
-                         "DNN_BinaryClassifier",
+                         "DNN_binary_classifier",
                          geometry,
                          hidden_layers,
                          activation,
@@ -77,7 +77,7 @@ class HxDenseNeuralNetworkBinaryClassifier(HxDeepLearningBaseModel):
         self._metric: Literal['accuracy', 'precision', 'recall', 'f1', 'specificity', 'balanced_acc', 'roc_auc'] = metric
 
         # ---- 1.3: Problem type
-        self._problem_type: Literal['binary', 'multiclass'] = problem_type
+        self._problem_type: Literal['binary'] = problem_type
 
         # --------------------------------------------------------------------------------------------
         # -- 2: Asigno las propiedades estandar
@@ -148,7 +148,7 @@ class HxDenseNeuralNetworkBinaryClassifier(HxDeepLearningBaseModel):
         inflection_point = hidden_layers // 2
 
         # ---- 2.3: Defino el modelo vacío
-        model = tf.keras.Sequential(name="advanced_dnn_classifier")
+        model = tf.keras.Sequential(name="advanced_dnn_binary_classifier")
 
         # --------------------------------------------------------------------------------------------
         # -- 3: Realizo la configuracion dinamica de la red
@@ -368,7 +368,7 @@ class HxDenseNeuralNetworkBinaryClassifier(HxDeepLearningBaseModel):
             # --------------------------------------------------------------------------------------------
 
             # ---- 3.1: Ejecuto la evaluación
-            metrics = EvaluateClassifier({
+            metrics = EvaluateBinaryClassifier({
                 "y_train": self.y_train,
                 "y_eval": None,
                 "y_test": self.y_test,
@@ -438,7 +438,7 @@ class HxDenseNeuralNetworkBinaryClassifier(HxDeepLearningBaseModel):
         probs_result_df = pd.DataFrame(probs_result_dict)
 
         # ---- 3.4: Evalúo las métricas y obtengo el diccionario
-        metrics_dict = ClassifierMetricsCalculations(
+        metrics_dict = BinaryClassifierMetricsCalculations(
             probs_result_df,
             self.model_save_path,
             self.x_test_df,
@@ -475,11 +475,8 @@ class HxDenseNeuralNetworkBinaryClassifier(HxDeepLearningBaseModel):
             "model_summary": self.get_model_summary(self.model)
         }
 
-
-
-
         # ---- 4.2: Guardo el modelo en formato .keras (¡IMPORTANTE! Desde tf 2.12 se usa .keras, para tf_gpu 2.10 sigue siendo .h5)
-        self.model.save(os.path.join(self.model_save_path, 'dnn_classifier.keras'))
+        self.model.save(os.path.join(self.model_save_path, f'{self.class_name}.keras'))
 
         # ---- 4.3: Almaceno el self.master_dict
         self.save_metrics_dict_json(self.master_result_dict, self.model_save_path, "complete_train_result")
@@ -502,7 +499,7 @@ class HxDenseNeuralNetworkBinaryClassifier(HxDeepLearningBaseModel):
         :param background_sample:
         :return:
         """
-        return DlShapTools(self.x_test_df, self.model_name, self.model_save_path, self.model, sample, num_features_to_show, num_sample, background_sample).run()
+        return DlShapToolsBinaryRegressor(self.x_test_df, self.model_name, self.model_save_path, self.model, sample, num_features_to_show, num_sample, background_sample).run()
 
     # </editor-fold>
 

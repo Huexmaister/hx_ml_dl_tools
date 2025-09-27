@@ -1,7 +1,7 @@
 from _hx_model_evaluation_tools import EvaluateRegressor, RegressorMetricsCalculations
 from hx_machine_learning_tools.ml_base_model import HxMachineLearningBaseModel
 from xgboost import XGBRegressor
-from _hx_model_evaluation_tools import MlShapTools
+from _hx_model_evaluation_tools import MlShapBinaryAndRegressorTools
 from typing import Dict, Literal, List, Any, Tuple
 from joblib import dump
 import pandas as pd
@@ -28,7 +28,7 @@ class HxXtremeGradientBoostingRegressor(HxMachineLearningBaseModel):
         :param hiperparams:
         :param bins:
         """
-        super().__init__(data_dict, hiperparams, "XGBregressor", save_path)
+        super().__init__(data_dict, hiperparams, "XGB_regressor", save_path)
 
         # --------------------------------------------------------------------------------------------
         # -- 0: Almaceno nombre de la clase, pinto la entrada y creo la propiedad model
@@ -205,7 +205,7 @@ class HxXtremeGradientBoostingRegressor(HxMachineLearningBaseModel):
         # --------------------------------------------------------------------------------------------
 
         # ---- 3.1: Almacenamiento del modelo
-        dump(self.model, f"{self.model_save_path}/xgb_regressor.joblib")
+        dump(self.model, f"{self.model_save_path}/{self.class_name}.joblib")
 
         # ---- 3.2: Obtencion de pesos (llamo al metodo polimorfeado self.get_weights)
         model_weights: List = self.get_weights(self.model)
@@ -231,7 +231,7 @@ class HxXtremeGradientBoostingRegressor(HxMachineLearningBaseModel):
         probs_result_df: pd.DataFrame = pd.DataFrame(probs_result_dict)
 
         # --------------------------------------------------------------------------------------------
-        # -- 5: Instancio ClassifierMetricsCalculations para obtener toda la info del resultado y rellenar el self.master_dict
+        # -- 5: Instancio BinaryClassifierMetricsCalculations para obtener toda la info del resultado y rellenar el self.master_dict
         # --------------------------------------------------------------------------------------------
 
         # ---- 5.1: Obtengo el diccionario de metricas que proporciona RegressorMetricsCalculations.run
@@ -287,7 +287,7 @@ class HxXtremeGradientBoostingRegressor(HxMachineLearningBaseModel):
         :return:
         """
 
-        return MlShapTools(self.x_test_df, self.model_name, self.model_save_path, self.model, sample, num_features_to_show, num_sample).run()
+        return MlShapBinaryAndRegressorTools(self.x_test_df, self.model_name, self.model_save_path, self.model, sample, num_features_to_show, num_sample).run()
 
     # </editor-fold>
 

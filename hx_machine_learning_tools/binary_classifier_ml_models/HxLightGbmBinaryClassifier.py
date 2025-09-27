@@ -1,7 +1,7 @@
 from hx_machine_learning_tools.ml_base_model import HxMachineLearningBaseModel
-from _hx_model_evaluation_tools import EvaluateClassifier, ClassifierMetricsCalculations
+from _hx_model_evaluation_tools import EvaluateBinaryClassifier, BinaryClassifierMetricsCalculations
 from lightgbm import LGBMClassifier
-from _hx_model_evaluation_tools import MlShapTools
+from _hx_model_evaluation_tools import MlShapBinaryAndRegressorTools
 from typing import Dict, Literal, List, Any, Tuple
 from joblib import dump
 import pandas as pd
@@ -28,7 +28,7 @@ class HxLightGbmBinaryClassifier(HxMachineLearningBaseModel):
         :param hiperparams:
         :param bins:
         """
-        super().__init__(data_dict, hiperparams, "LGBMclassifier", save_path)
+        super().__init__(data_dict, hiperparams, "LGBM_binary_classifier", save_path)
 
         # --------------------------------------------------------------------------------------------
         # -- 0: Almaceno nombre de la clase, pinto la entrada y creo la propiedad model
@@ -137,15 +137,15 @@ class HxLightGbmBinaryClassifier(HxMachineLearningBaseModel):
         y_pred_test: np.ndarray = self.model.predict(self.x_test_df)
 
         # ---- 2.2. Evalúo y almaceno las metricas
-        metrics: Dict[str, Any] = EvaluateClassifier({"y_train": self.y_train,
+        metrics: Dict[str, Any] = EvaluateBinaryClassifier({"y_train": self.y_train,
                                                                "y_eval": None,
                                                                "y_test": self.y_test,
                                                                "y_pred_train": y_pred_train,
                                                                "y_pred_eval": None,
                                                                "y_pred_test": y_pred_test,
                                                                "target_col_name": self.target_col_name},
-                                                              self.model_name,
-                                                              self.metric).calculate_and_print_metrics()
+                                                           self.model_name,
+                                                           self.metric).calculate_and_print_metrics()
 
         # ---- 2.3: Almaceno el diccionario de metricas como json en el path
         if save_metrics_dict:
@@ -193,7 +193,7 @@ class HxLightGbmBinaryClassifier(HxMachineLearningBaseModel):
         y_pred_test = self.model.predict(self.x_test_df)
 
         # ---- 2.2. Evalúo las metricas
-        EvaluateClassifier(
+        EvaluateBinaryClassifier(
             {
                 "y_train": self.y_train,
                 "y_eval": None,
@@ -211,7 +211,7 @@ class HxLightGbmBinaryClassifier(HxMachineLearningBaseModel):
         # --------------------------------------------------------------------------------------------
 
         # ---- 3.1: Almacenamiento del modelo
-        dump(self.model, f"{self.model_save_path}/lgbm_classifier.joblib")
+        dump(self.model, f"{self.model_save_path}/{self.class_name}.joblib")
 
         # ---- 3.2: Obtencion de pesos (llamo al metodo polimorfeado self.get_weights)
         model_weights: List = self.get_weights(self.model)
@@ -238,11 +238,11 @@ class HxLightGbmBinaryClassifier(HxMachineLearningBaseModel):
         probs_result_df: pd.DataFrame = pd.DataFrame(probs_result_dict)
 
         # --------------------------------------------------------------------------------------------
-        # -- 5: Instancio ClassifierMetricsCalculations para obtener toda la info del resultado y rellenar el self.master_dict
+        # -- 5: Instancio BinaryClassifierMetricsCalculations para obtener toda la info del resultado y rellenar el self.master_dict
         # --------------------------------------------------------------------------------------------
 
-        # ---- 5.1: Obtengo el diccionario de metricas que proporciona ClassifierMetricsCalculations.run
-        metrics_dict: dict = ClassifierMetricsCalculations(
+        # ---- 5.1: Obtengo el diccionario de metricas que proporciona BinaryClassifierMetricsCalculations.run
+        metrics_dict: dict = BinaryClassifierMetricsCalculations(
             probs_result_df,
             self.model_save_path,
             self.x_test_df,
@@ -294,7 +294,7 @@ class HxLightGbmBinaryClassifier(HxMachineLearningBaseModel):
         :return:
         """
 
-        return MlShapTools(self.x_test_df, self.model_name, self.model_save_path, self.model, sample, num_features_to_show, num_sample).run()
+        return MlShapBinaryAndRegressorTools(self.x_test_df, self.model_name, self.model_save_path, self.model, sample, num_features_to_show, num_sample).run()
 
     # </editor-fold>
 
