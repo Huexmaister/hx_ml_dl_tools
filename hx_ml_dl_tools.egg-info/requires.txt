@@ -1,0 +1,12 @@
+catboost==1.2.8
+category_encoders==2.8.1
+constants_and_tools==2.2.1
+imblearn==0.0
+joblib==1.5.2
+lightgbm==4.6.0
+matplotlib==3.10.6
+openpyxl==3.1.5
+scikit-learn==1.7.2
+shap==0.48.0
+tensorflow==2.20.0
+xgboost==3.0.5

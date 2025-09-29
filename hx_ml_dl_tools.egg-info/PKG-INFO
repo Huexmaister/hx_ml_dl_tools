@@ -1,0 +1,40 @@
+Metadata-Version: 2.4
+Name: hx_ml_dl_tools
+Version: 1.0.0
+Summary: Librería desarrollo de modelos de ML y DL
+Home-page: https://github.com/Huexmaister/hx_ml_dl_tools
+Author: Daniel Sarabia Torres aka Huexmaister
+Author-email: dsarabiatorres@gmail.com
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: catboost==1.2.8
+Requires-Dist: category_encoders==2.8.1
+Requires-Dist: constants_and_tools==2.2.1
+Requires-Dist: imblearn==0.0
+Requires-Dist: joblib==1.5.2
+Requires-Dist: lightgbm==4.6.0
+Requires-Dist: matplotlib==3.10.6
+Requires-Dist: openpyxl==3.1.5
+Requires-Dist: scikit-learn==1.7.2
+Requires-Dist: shap==0.48.0
+Requires-Dist: tensorflow==2.20.0
+Requires-Dist: xgboost==3.0.5
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
+
+# hx_ml_dl_tools
+Suite de funcionalidades para aprendizaje automatico (dl y ml)
+
+# install
+
+- pip install constants_and_tools plotly tensorflow scikit-learn imblearn category-encoders xgboost catboost lightgbm shap

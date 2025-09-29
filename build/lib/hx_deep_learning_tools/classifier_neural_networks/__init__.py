@@ -1,0 +1,4 @@
+from hx_deep_learning_tools.classifier_neural_networks.binary_neural_networks import HxDenseNeuralNetworkBinaryClassifier
+from hx_deep_learning_tools.classifier_neural_networks.multiclass_neural_networks import HxDenseNeuralNetworkMulticlassClassifier
+
+

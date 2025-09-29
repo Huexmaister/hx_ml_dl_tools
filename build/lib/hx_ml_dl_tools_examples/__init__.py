@@ -1,0 +1,3 @@
+from hx_ml_dl_tools_examples.regression_examples import DiabetesExample, CaliforniaHousingExample
+from hx_ml_dl_tools_examples.binary_classification_examples import BreastCancerExample, CreditFraudExample
+from hx_ml_dl_tools_examples.multiclass_classification_examples import IrisMulticlassExample, DigitsMulticlassExample, WineQualityMulticlassExample
