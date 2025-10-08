@@ -173,7 +173,7 @@ class RegressorMetricsCalculations:
             self.probs_result_df[f'stratification_{self.target_col_name}'] = pd.cut(self.probs_result_df[f"predict_value_{self.target_col_name}"],
                                                                                     bins=self.bins_dict["bins"],
                                                                                     labels=self.bins_dict["labels"],
-                                                                                    right=False)
+                                                                                    right=True)
 
             # ---- 3.2: Creamos dos columnas, f'stratification_{self.target_col_name}_high' y f'stratification_{self.target_col_name}_low' para separar los bounds
             self.probs_result_df[f'stratification_{self.target_col_name}_high'] =self.probs_result_df[f'stratification_{self.target_col_name}'].str.split('-').str[0].astype(float)

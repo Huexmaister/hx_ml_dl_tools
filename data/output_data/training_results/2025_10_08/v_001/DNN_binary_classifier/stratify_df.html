@@ -1,0 +1,173 @@
+
+                <html>
+                <head>
+                    <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
+                    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.css">
+                    <script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+                    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.js"></script>
+                    <script>
+                    $(document).ready( function () {
+                        var table = $('.display').DataTable({
+                            "scrollX": false,
+                            "pageLength": 100,
+                            "order": [],
+                            "dom": '<"search-box"f>tip'
+                        });
+                    } );
+                    </script>
+                    <style>
+                        body {
+                            font-family: 'Roboto', sans-serif;
+                            margin: 20px;
+                            padding: 20px;
+                            background-color: #f5f5f7;
+                        }
+
+                        .display {
+                            margin: 20px auto;
+                            width: 90%;
+                            border-collapse: collapse;
+                            background-color: #fff;
+                            border-radius: 10px;
+                            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+                        }
+                        th, td {
+                            padding: 15px;
+                            text-align: left;
+                            border-bottom: 1px solid #ddd;
+                        }
+                        th {
+                            background-color: #333;
+                            color: #fff;
+                            font-weight: 700;
+                            text-transform: uppercase;
+                        }
+                        tr:nth-child(even) {
+                            background-color: #f5f5f7;
+                        }
+                        tr:hover {
+                            background-color: #e9e9eb;
+                        }
+                        .search-box-wrapper {
+                            text-align: center;
+                            margin-top: 20px;
+                            margin-bottom: 20px;
+                        }
+                        .dataTables_filter_custom {
+                            display: block;
+                            text-align: center;
+                            margin-left: auto;
+                            margin-right: auto;
+                        }
+                        .dataTables_filter_custom input {
+                            width: 300px;
+                            padding: 10px;
+                            font-size: 16px;
+                            border-radius: 5px;
+                            border: 1px solid #ccc;
+                        }
+                        .dataTables_wrapper .dataTables_filter {
+                            float: none !important;
+                            text-align: center !important;
+                            margin: 3%;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <table class="dataframe display">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>confidence</th>
+      <th>total_predicho_target</th>
+      <th>aciertos_target</th>
+      <th>fallos_target</th>
+      <th>TP_total_TP_target</th>
+      <th>FP_total_FP_target</th>
+      <th>TN_total_TN_target</th>
+      <th>FN_total_FN_target</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>87.5-100</td>
+      <td>41.23%  (47/114)</td>
+      <td>100.0%  (47/47)</td>
+      <td>0.0%  (0/47)</td>
+      <td>66.2%  (47/71)</td>
+      <td>0.0%  (0/6)</td>
+      <td>0.0%  (0/37)</td>
+      <td>&lt;NA&gt;</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>75-87.5</td>
+      <td>12.28%  (14/114)</td>
+      <td>100.0%  (14/14)</td>
+      <td>0.0%  (0/14)</td>
+      <td>19.72%  (14/71)</td>
+      <td>0.0%  (0/6)</td>
+      <td>0.0%  (0/37)</td>
+      <td>&lt;NA&gt;</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>62.5-75</td>
+      <td>7.89%  (9/114)</td>
+      <td>77.78%  (7/9)</td>
+      <td>22.22%  (2/9)</td>
+      <td>9.86%  (7/71)</td>
+      <td>33.33%  (2/6)</td>
+      <td>0.0%  (0/37)</td>
+      <td>&lt;NA&gt;</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>50-62.5</td>
+      <td>6.14%  (7/114)</td>
+      <td>42.86%  (3/7)</td>
+      <td>57.14%  (4/7)</td>
+      <td>4.23%  (3/71)</td>
+      <td>66.67%  (4/6)</td>
+      <td>0.0%  (0/37)</td>
+      <td>&lt;NA&gt;</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>25-37.5</td>
+      <td>2.63%  (3/114)</td>
+      <td>100.0%  (3/3)</td>
+      <td>0.0%  (0/3)</td>
+      <td>0.0%  (0/71)</td>
+      <td>0.0%  (0/6)</td>
+      <td>8.11%  (3/37)</td>
+      <td>&lt;NA&gt;</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>12.5-25</td>
+      <td>0.88%  (1/114)</td>
+      <td>100.0%  (1/1)</td>
+      <td>0.0%  (0/1)</td>
+      <td>0.0%  (0/71)</td>
+      <td>0.0%  (0/6)</td>
+      <td>2.7%  (1/37)</td>
+      <td>&lt;NA&gt;</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>0-12.5</td>
+      <td>28.95%  (33/114)</td>
+      <td>100.0%  (33/33)</td>
+      <td>0.0%  (0/33)</td>
+      <td>0.0%  (0/71)</td>
+      <td>0.0%  (0/6)</td>
+      <td>89.19%  (33/37)</td>
+      <td>&lt;NA&gt;</td>
+    </tr>
+  </tbody>
+</table>
+                </body>
+                </html>
+                

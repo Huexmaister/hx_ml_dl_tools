@@ -1,0 +1,94 @@
+{
+    "XGB_binary_classifier": {
+        "columns": [
+            "mean radius",
+            "mean texture",
+            "mean perimeter",
+            "mean area",
+            "mean smoothness",
+            "mean compactness",
+            "mean concavity",
+            "mean concave points",
+            "mean symmetry",
+            "mean fractal dimension",
+            "radius error",
+            "texture error",
+            "perimeter error",
+            "area error",
+            "smoothness error",
+            "compactness error",
+            "concavity error",
+            "concave points error",
+            "symmetry error",
+            "fractal dimension error",
+            "worst radius",
+            "worst texture",
+            "worst perimeter",
+            "worst area",
+            "worst smoothness",
+            "worst compactness",
+            "worst concavity",
+            "worst concave points",
+            "worst symmetry",
+            "worst fractal dimension"
+        ],
+        "target": "target",
+        "best_params": {
+            "max_depth": 4,
+            "learning_rate": 0.0252564415569135,
+            "n_estimators": 109,
+            "reg_alpha": 1,
+            "reg_lambda": 0
+        },
+        "metrics": {
+            "target": {
+                "metrics": {
+                    "accuracy": 95.614,
+                    "recall": 97.183,
+                    "specifity": 93.023,
+                    "f1": 96.392,
+                    "ALL": {
+                        "TP": 69,
+                        "FP": 3,
+                        "TN": 40,
+                        "FN": 2
+                    }
+                }
+            }
+        },
+        "model_weights": {
+            "mean radius": 0.019077744334936142,
+            "mean texture": 0.017867708578705788,
+            "mean perimeter": 0.0,
+            "mean area": 0.0411388985812664,
+            "mean smoothness": 0.007073116488754749,
+            "mean compactness": 0.004859027918428183,
+            "mean concavity": 0.0022649664897471666,
+            "mean concave points": 0.4190431237220764,
+            "mean symmetry": 0.0,
+            "mean fractal dimension": 0.0043405513279139996,
+            "radius error": 0.012206773273646832,
+            "texture error": 0.004807916469871998,
+            "perimeter error": 0.015228939242661,
+            "area error": 0.014281014911830425,
+            "smoothness error": 0.004809468053281307,
+            "compactness error": 0.004509138409048319,
+            "concavity error": 0.007710771169513464,
+            "concave points error": 0.001677313237451017,
+            "symmetry error": 0.002085292711853981,
+            "fractal dimension error": 0.00852188654243946,
+            "worst radius": 0.04531608149409294,
+            "worst texture": 0.02202332206070423,
+            "worst perimeter": 0.10941357165575027,
+            "worst area": 0.035341788083314896,
+            "worst smoothness": 0.006777894217520952,
+            "worst compactness": 0.0019751177169382572,
+            "worst concavity": 0.019460827112197876,
+            "worst concave points": 0.16416701674461365,
+            "worst symmetry": 0.0026674584951251745,
+            "worst fractal dimension": 0.0013531813165172935
+        },
+        "model_class_name": "XGBClassifier",
+        "model_module_name": "xgboost.sklearn"
+    }
+}

@@ -1,0 +1,94 @@
+{
+    "CAT_binary_classifier": {
+        "columns": [
+            "mean radius",
+            "mean texture",
+            "mean perimeter",
+            "mean area",
+            "mean smoothness",
+            "mean compactness",
+            "mean concavity",
+            "mean concave points",
+            "mean symmetry",
+            "mean fractal dimension",
+            "radius error",
+            "texture error",
+            "perimeter error",
+            "area error",
+            "smoothness error",
+            "compactness error",
+            "concavity error",
+            "concave points error",
+            "symmetry error",
+            "fractal dimension error",
+            "worst radius",
+            "worst texture",
+            "worst perimeter",
+            "worst area",
+            "worst smoothness",
+            "worst compactness",
+            "worst concavity",
+            "worst concave points",
+            "worst symmetry",
+            "worst fractal dimension"
+        ],
+        "target": "target",
+        "best_params": {
+            "iterations": 183,
+            "max_depth": 6,
+            "learning_rate": 0.1698920392709947,
+            "l2_leaf_reg": 0,
+            "penalties_coefficient": 2
+        },
+        "metrics": {
+            "target": {
+                "metrics": {
+                    "accuracy": 96.491,
+                    "recall": 98.592,
+                    "specifity": 93.023,
+                    "f1": 97.53,
+                    "ALL": {
+                        "TP": 70,
+                        "FP": 3,
+                        "TN": 40,
+                        "FN": 1
+                    }
+                }
+            }
+        },
+        "model_weights": {
+            "mean radius": 4.48186534641193,
+            "mean texture": 5.003444384573243,
+            "mean perimeter": 1.8450302460363108,
+            "mean area": 2.6492216681189937,
+            "mean smoothness": 1.2770488941186184,
+            "mean compactness": 2.6318756037604327,
+            "mean concavity": 0.6227448105113694,
+            "mean concave points": 3.6747423502565666,
+            "mean symmetry": 1.1062606961240262,
+            "mean fractal dimension": 0.14989333282452155,
+            "radius error": 4.7146847535977825,
+            "texture error": 2.472521971993698,
+            "perimeter error": 3.278211567771385,
+            "area error": 1.105236582507403,
+            "smoothness error": 1.830998500419398,
+            "compactness error": 0.871848081456999,
+            "concavity error": 1.3989840278333965,
+            "concave points error": 4.467263881583854,
+            "symmetry error": 6.2909071902420175,
+            "fractal dimension error": 0.976908538656392,
+            "worst radius": 2.9475324219580563,
+            "worst texture": 7.855477890198621,
+            "worst perimeter": 2.677291004596734,
+            "worst area": 9.635049995323765,
+            "worst smoothness": 7.092685505719549,
+            "worst compactness": 2.0190042441763656,
+            "worst concavity": 6.51235875978425,
+            "worst concave points": 7.742285056313946,
+            "worst symmetry": 1.6582878499443412,
+            "worst fractal dimension": 1.0103348431860644
+        },
+        "model_class_name": "CatBoostClassifier",
+        "model_module_name": "catboost.core"
+    }
+}

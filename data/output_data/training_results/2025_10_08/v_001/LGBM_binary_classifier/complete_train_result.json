@@ -1,0 +1,94 @@
+{
+    "LGBM_binary_classifier": {
+        "columns": [
+            "mean radius",
+            "mean texture",
+            "mean perimeter",
+            "mean area",
+            "mean smoothness",
+            "mean compactness",
+            "mean concavity",
+            "mean concave points",
+            "mean symmetry",
+            "mean fractal dimension",
+            "radius error",
+            "texture error",
+            "perimeter error",
+            "area error",
+            "smoothness error",
+            "compactness error",
+            "concavity error",
+            "concave points error",
+            "symmetry error",
+            "fractal dimension error",
+            "worst radius",
+            "worst texture",
+            "worst perimeter",
+            "worst area",
+            "worst smoothness",
+            "worst compactness",
+            "worst concavity",
+            "worst concave points",
+            "worst symmetry",
+            "worst fractal dimension"
+        ],
+        "target": "target",
+        "best_params": {
+            "max_depth": 3,
+            "learning_rate": 0.08821398180209895,
+            "n_estimators": 318,
+            "reg_alpha": 3,
+            "reg_lambda": 3
+        },
+        "metrics": {
+            "target": {
+                "metrics": {
+                    "accuracy": 97.368,
+                    "recall": 98.592,
+                    "specifity": 95.349,
+                    "f1": 97.976,
+                    "ALL": {
+                        "TP": 70,
+                        "FP": 2,
+                        "TN": 41,
+                        "FN": 1
+                    }
+                }
+            }
+        },
+        "model_weights": {
+            "mean radius": 0.0,
+            "mean texture": 36.0,
+            "mean perimeter": 0.0,
+            "mean area": 13.0,
+            "mean smoothness": 14.0,
+            "mean compactness": 0.0,
+            "mean concavity": 7.0,
+            "mean concave points": 25.0,
+            "mean symmetry": 6.0,
+            "mean fractal dimension": 3.0,
+            "radius error": 15.0,
+            "texture error": 0.0,
+            "perimeter error": 5.0,
+            "area error": 29.0,
+            "smoothness error": 1.0,
+            "compactness error": 0.0,
+            "concavity error": 2.0,
+            "concave points error": 1.0,
+            "symmetry error": 0.0,
+            "fractal dimension error": 1.0,
+            "worst radius": 31.0,
+            "worst texture": 75.0,
+            "worst perimeter": 38.0,
+            "worst area": 36.0,
+            "worst smoothness": 27.0,
+            "worst compactness": 1.0,
+            "worst concavity": 21.0,
+            "worst concave points": 39.0,
+            "worst symmetry": 27.0,
+            "worst fractal dimension": 0.0
+        },
+        "model_class_name": "LGBMClassifier",
+        "model_module_name": "lightgbm.sklearn"
+    }
+}

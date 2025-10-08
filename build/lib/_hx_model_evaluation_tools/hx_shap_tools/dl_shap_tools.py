@@ -174,16 +174,30 @@ class DlShapToolsBinaryRegressor:
 
             # ---- 2.2: intentar crear un Explainer genérico (API unificada)
             try:
+                # Primer intento: Explainer con masker sin max_evals
                 masker = shap.maskers.Independent(self._background.values)
                 self.explainer = shap.Explainer(f_model, masker, output_names=None)
-            except Exception:
-                # fallback: intentar DeepExplainer
+                self.IT.info_print("Explainer con masker (sin max_evals) inicializado exitosamente")
+
+            except Exception as e1:
+                self.IT.info_print(f"Primer intento falló: {e1}, intentando con max_evals...")
+
                 try:
-                    self.IT.info_print("hx_shap_tools.Explainer con masker falló, intentando DeepExplainer fallback...")
-                    # DeepExplainer pide background como array
-                    self.explainer = shap.DeepExplainer(self.model, self._background.values)
-                except Exception as e_deep:
-                    raise RuntimeError(f"No se pudo inicializar explainer: {e_deep}")
+                    # Segundo intento: Explainer con masker CON max_evals
+                    masker = shap.maskers.Independent(self._background.values)
+                    self.explainer = shap.Explainer(f_model, masker, output_names=None, max_evals=2 * self._background.shape[1] + 1)
+                    self.IT.info_print("Explainer con masker (con max_evals) inicializado exitosamente")
+
+                except Exception as e2:
+                    self.IT.info_print(f"Segundo intento falló: {e2}, intentando DeepExplainer...")
+
+                    try:
+                        # Tercer intento: DeepExplainer
+                        self.explainer = shap.DeepExplainer(self.model, self._background.values)
+                        self.IT.info_print("DeepExplainer inicializado exitosamente")
+
+                    except Exception as e3:
+                        raise RuntimeError(f"No se pudo inicializar ningún explainer SHAP. Errores: {e1}, {e2}, {e3}")
 
             # ---- 2.3: calcular hx_shap_tools values (esto puede tardar)
             self.IT.info_print("Calculando valores SHAP (puede tardar según tamaño de muestra)...")

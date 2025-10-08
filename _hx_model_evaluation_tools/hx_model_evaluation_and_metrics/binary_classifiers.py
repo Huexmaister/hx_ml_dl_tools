@@ -166,7 +166,8 @@ class BinaryClassifierMetricsCalculations:
 
         # ---- 3.2: Accuracy
         accuracy = round(df_true.shape[0] / self.probs_result_df.shape[0] * 100, 3)
-        self.CT.IT.info_print(f"Accuracy:      {accuracy} % -------  Formula: ({true_positive} + {true_negative})  / ({false_negative} + {false_negative}) * 100",
+        self.CT.IT.info_print(f"Accuracy:      {accuracy} % -------  Formula: ({true_positive} + {true_negative})  / ({true_positive} + {true_negative} + "
+                              f"{false_positive} + {false_negative}) * 100",
                               "light_cyan")
 
         # ---- 3.3: Recall (SENSIBILIDAD)
@@ -189,7 +190,10 @@ class BinaryClassifierMetricsCalculations:
         # ----------------------------------------------------------------------------------------------------
 
         # ---- 4.1: Creamos la nueva columna utilizando pd.cut(), esto depende de lo que le pasamos con parametro en el bins_dict
-        self.probs_result_df[f'stratification_{self.target_col_name}'] = pd.cut(self.probs_result_df[f"positive_proba_{self.target_col_name}"], bins=self.bins_dict["bins"], labels=self.bins_dict["labels"], right=False)
+        self.probs_result_df[f'stratification_{self.target_col_name}'] = pd.cut(self.probs_result_df[f"positive_proba_{self.target_col_name}"],
+                                                                                bins=self.bins_dict["bins"],
+                                                                                labels=self.bins_dict["labels"],
+                                                                                right=True)
 
         # ---- 4.2: Creo el stratify df que se va a ir agregando al self.stratify df
         stratify_df_base_cols: list = ["confidence", "total_predicho", "aciertos", "fallos", "TP_total_TP", "FP_total_FP", "TN_total_TN", "FN_total_FN"]

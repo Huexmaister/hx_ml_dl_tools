@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="hx_ml_dl_tools",
-    version="1.0.0",
+    version="1.1.0",
     author="Daniel Sarabia Torres aka Huexmaister",
     author_email="dsarabiatorres@gmail.com",
     description="Librería desarrollo de modelos de ML y DL",

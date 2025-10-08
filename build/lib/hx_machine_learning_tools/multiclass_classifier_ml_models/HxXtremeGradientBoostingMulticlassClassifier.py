@@ -315,6 +315,7 @@ class HxXtremeGradientBoostingMulticlassClassifier(HxMachineLearningBaseModel):
         self.master_result_dict[f"{self.model_name}"]["model_class_name"] = model_class_name
         self.master_result_dict[f"{self.model_name}"]["model_module_name"] = model_module_name
         self.master_result_dict[f"{self.model_name}"]["n_classes"] = self.n_classes
+        self.master_result_dict[f"{self.model_name}"]["model_version"] = f"{self.today_str_daye}_{self.current_train_version}"
 
         # --------------------------------------------------------------------------------------------
         # -- 6: Pinto y retorno la tupla (model, x_test_probs, x_train_probs, self.master_dict, model_weights)

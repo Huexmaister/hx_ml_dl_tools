@@ -1,6 +1,9 @@
 # hx_ml_dl_tools
 Suite de funcionalidades para aprendizaje automatico (dl y ml)
 
-# install
+## version 1.1.0
 
-- pip install constants_and_tools plotly tensorflow scikit-learn imblearn category-encoders xgboost catboost lightgbm shap
+- Modificaciones de bugs de nombres de guardado
+- Adicion de version del modelo al diccionario resultante del entrenamiento
+- Solucionada la excepcion del SHAP relacionada con backgrounds escasos
+- Agregado módulo hx_predictor

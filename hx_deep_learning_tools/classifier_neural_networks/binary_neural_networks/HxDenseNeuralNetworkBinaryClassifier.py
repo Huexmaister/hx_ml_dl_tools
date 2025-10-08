@@ -472,7 +472,8 @@ class HxDenseNeuralNetworkBinaryClassifier(HxDeepLearningBaseModel):
             "model_class_name": self.model.__class__.__name__,
             "model_module_name": self.model.__class__.__module__,
             "model_architecture": json.loads(self.model.to_json()),
-            "model_summary": self.get_model_summary(self.model)
+            "model_summary": self.get_model_summary(self.model),
+            "model_version": f"{self.today_str_daye}_{self.current_train_version}",
         }
 
         # ---- 4.2: Guardo el modelo en formato .keras (¡IMPORTANTE! Desde tf 2.12 se usa .keras, para tf_gpu 2.10 sigue siendo .h5)

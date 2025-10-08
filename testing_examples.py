@@ -26,7 +26,7 @@ from hx_ml_dl_tools_examples import BreastCancerExample, CreditFraudExample
 # -- 3: Ejemplo de clasificacion binaria con BreastCancer
 # ----------------------------------------------------------------
 
-# BreastCancerExample().execute_example()
+BreastCancerExample().execute_example()
 
 # ----------------------------------------------------------------
 # -- 4: Ejemplo de clasificacion binaria con CreditFraud
@@ -57,4 +57,4 @@ from hx_ml_dl_tools_examples import IrisMulticlassExample, DigitsMulticlassExamp
 # -- 7: Ejemplo de clasificacion multiclase con DigitsMulticlassExample
 # ----------------------------------------------------------------
 
-DigitsMulticlassExample().execute_example()
+# DigitsMulticlassExample().execute_example()

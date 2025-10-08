@@ -529,7 +529,8 @@ class HxDenseNeuralNetworkMulticlassClassifier(HxDeepLearningBaseModel):
             "model_architecture": json.loads(self.model.to_json()),
             "model_summary": self.get_model_summary(self.model),
             "num_classes": self.num_classes,
-            "label_encoder_classes": self.label_encoder.classes_.tolist()  # Guardar mapeo de clases
+            "label_encoder_classes": self.label_encoder.classes_.tolist(),  # Guardar mapeo de clases
+            "model_version": f"{self.today_str_daye}_{self.current_train_version}",
         }
 
         # ---- 4.2: Guardo el modelo en formato .keras
